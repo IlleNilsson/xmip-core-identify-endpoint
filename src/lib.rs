@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
-//! Library entry point for an Xmip component.
+//! Identify by endpoint: reads the identity the Receive Location's configuration names; a
+//! transport-layer identifier whose claim is inferred.
 //!
-//! Replace this template documentation only after the repository responsibility,
-//! public contracts and dependency direction are accepted in the Xmip architecture.
+//! Declared and not yet written: `architecture.toml` carries the maturity. When it
+//! is, it implements `TransportIdentifier` (ADR-0050).
