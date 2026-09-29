@@ -4,7 +4,7 @@
 //! Location's configuration says it is from.
 //!
 //! Some channels have exactly one far end and no way for it to say who it is:
-//! a drop folder one partner writes to, a leased line, a mailbox Xmip empties
+//! a drop folder one Party writes to, a leased line, a mailbox Xmip empties
 //! on a schedule, a serial port with one instrument on it. The operator knows
 //! who is there because the operator put them there, and says so once in the
 //! Receive Location's configuration. This identifier is built from that
@@ -90,28 +90,25 @@ mod tests {
         Stream::new(StreamId::new(1), b"<order/>".to_vec(), None)
     }
 
-    fn partner() -> Endpoint {
-        Endpoint::named("partner-x").expect("an identity")
+    fn party() -> Endpoint {
+        Endpoint::named("party-x").expect("an identity")
     }
 
     #[test]
     fn what_arrives_on_the_location_is_from_whom_the_configuration_says() {
         let stream = stream();
-        let arrival = StreamArrival::new(&stream, Arriving::Detected, "file:///in/partner-x", &[]);
+        let arrival = StreamArrival::new(&stream, Arriving::Detected, "file:///in/party-x", &[]);
 
-        let claim = partner()
-            .identify(&arrival)
-            .expect("read")
-            .expect("a claim");
+        let claim = party().identify(&arrival).expect("read").expect("a claim");
 
         assert_eq!(claim.mechanism.name(), "endpoint");
-        assert_eq!(claim.value, "partner-x");
+        assert_eq!(claim.value, "party-x");
         assert_eq!(claim.established, Established::Inferred);
         assert_eq!(claim.layer(), Layer::Transport);
         assert!(
             claim
                 .evidence
-                .contains(&(SOURCE.to_string(), "file:///in/partner-x".to_string()))
+                .contains(&(SOURCE.to_string(), "file:///in/party-x".to_string()))
         );
     }
 
@@ -120,12 +117,9 @@ mod tests {
         let stream = stream();
 
         for arriving in [Arriving::Pushed, Arriving::Detected, Arriving::Scheduled] {
-            let arrival = StreamArrival::new(&stream, arriving, "sftp://partner/out", &[]);
+            let arrival = StreamArrival::new(&stream, arriving, "sftp://party/out", &[]);
 
-            let claim = partner()
-                .identify(&arrival)
-                .expect("read")
-                .expect("a claim");
+            let claim = party().identify(&arrival).expect("read").expect("a claim");
 
             assert_eq!(claim.established, Established::Inferred);
             assert!(
@@ -140,20 +134,14 @@ mod tests {
     fn nothing_the_sender_puts_on_the_arrival_changes_the_inferred_identity() {
         let stream = stream();
         let facts = [
-            (
-                "http.header.x-partner-id".to_string(),
-                "mallory".to_string(),
-            ),
+            ("http.header.x-party-id".to_string(), "mallory".to_string()),
             ("endpoint".to_string(), "mallory".to_string()),
         ];
         let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://xmip/in", &facts);
 
-        let claim = partner()
-            .identify(&arrival)
-            .expect("read")
-            .expect("a claim");
+        let claim = party().identify(&arrival).expect("read").expect("a claim");
 
-        assert_eq!(claim.value, "partner-x");
+        assert_eq!(claim.value, "party-x");
         assert!(claim.evidence.iter().all(|(_, value)| value != "mallory"));
     }
 
@@ -171,11 +159,11 @@ mod tests {
     fn the_configured_identity_is_trimmed_and_attaches_no_proof() {
         let stream = stream();
         let arrival = StreamArrival::new(&stream, Arriving::Detected, "file:///in/x", &[]);
-        let endpoint = Endpoint::named(" partner-x ").expect("an identity");
+        let endpoint = Endpoint::named(" party-x ").expect("an identity");
 
         let claim = endpoint.identify(&arrival).expect("read").expect("a claim");
 
-        assert_eq!(endpoint.identity(), "partner-x");
+        assert_eq!(endpoint.identity(), "party-x");
         assert!(!claim.mechanism.authenticates());
         assert!(format!("{claim:?}").contains("proof: []"));
     }
