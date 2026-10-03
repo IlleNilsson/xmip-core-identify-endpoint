@@ -83,12 +83,8 @@ impl TransportIdentifier for Endpoint {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use stream::Stream;
-    use xcore::{Arriving, Established, Layer, StreamId};
 
-    fn stream() -> Stream {
-        Stream::new(StreamId::new(1), b"<order/>".to_vec(), None)
-    }
+    use xcore::{Arriving, Established, Layer};
 
     fn party() -> Endpoint {
         Endpoint::named("party-x").expect("an identity")
@@ -96,8 +92,7 @@ mod tests {
 
     #[test]
     fn what_arrives_on_the_location_is_from_whom_the_configuration_says() {
-        let stream = stream();
-        let arrival = StreamArrival::new(&stream, Arriving::Detected, "file:///in/party-x", &[]);
+        let arrival = StreamArrival::new(Arriving::Detected, "file:///in/party-x", &[]);
 
         let claim = party().identify(&arrival).expect("read").expect("a claim");
 
@@ -114,10 +109,8 @@ mod tests {
 
     #[test]
     fn a_scheduled_pickup_is_identified_although_nobody_was_there_to_pass_anything() {
-        let stream = stream();
-
         for arriving in [Arriving::Pushed, Arriving::Detected, Arriving::Scheduled] {
-            let arrival = StreamArrival::new(&stream, arriving, "sftp://party/out", &[]);
+            let arrival = StreamArrival::new(arriving, "sftp://party/out", &[]);
 
             let claim = party().identify(&arrival).expect("read").expect("a claim");
 
@@ -132,12 +125,11 @@ mod tests {
 
     #[test]
     fn nothing_the_sender_puts_on_the_arrival_changes_the_inferred_identity() {
-        let stream = stream();
         let facts = [
             ("http.header.x-party-id".to_string(), "mallory".to_string()),
             ("endpoint".to_string(), "mallory".to_string()),
         ];
-        let arrival = StreamArrival::new(&stream, Arriving::Pushed, "https://xmip/in", &facts);
+        let arrival = StreamArrival::new(Arriving::Pushed, "https://xmip/in", &facts);
 
         let claim = party().identify(&arrival).expect("read").expect("a claim");
 
@@ -157,8 +149,7 @@ mod tests {
 
     #[test]
     fn the_configured_identity_is_trimmed_and_attaches_no_proof() {
-        let stream = stream();
-        let arrival = StreamArrival::new(&stream, Arriving::Detected, "file:///in/x", &[]);
+        let arrival = StreamArrival::new(Arriving::Detected, "file:///in/x", &[]);
         let endpoint = Endpoint::named(" party-x ").expect("an identity");
 
         let claim = endpoint.identify(&arrival).expect("read").expect("a claim");
